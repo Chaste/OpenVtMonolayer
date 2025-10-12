@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2023, University of Oxford.
+Copyright (c) 2005-2025, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -33,22 +33,46 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef HELLO_HPP_
-#define HELLO_HPP_
+#ifndef FIXEDDURATIONCELLCYCLEMODELWITHGROWTHINHIBITION_HPP_
+#define FIXEDDURATIONCELLCYCLEMODELWITHGROWTHINHIBITION_HPP_
 
-#include <string>
+#include "AbstractSimplePhaseBasedCellCycleModel.hpp"
 
-class Hello
+// "Simple" cell-cycle model: phase durations are set when the model is created.
+class FixedDurationCellCycleModelWithGrowthInhibition : public AbstractSimplePhaseBasedCellCycleModel
 {
 private:
-    std::string mMessage;
+    // For archiving (saving or loading) the cell-cycle model object in a cell-based simulation. 
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & archive, const unsigned int version);
+
+    void SetPhaseDurations();
+    void SetG1Duration() override;
+    
+    double mPhaseTimer;
+    double mLastCellAge;
 
 public:
-    Hello(const std::string& rMessage);
+    FixedDurationCellCycleModelWithGrowthInhibition();
 
-    std::string GetMessage();
+    // Override builder method for new copies of the cell-cycle model.
+    AbstractCellCycleModel* CreateCellCycleModel() override;
+    
+    bool ReadyToDivide() override;
 
-    void Complain(const std::string& rComplaint);
+    void ResetForDivision() override;
+    
+    // Override to start phase from G1
+    void UpdateCellCyclePhase() override;
+    
+    void SetPhaseTimer(const double value);
 };
 
-#endif /*HELLO_HPP_*/
+// Provides a unique identifier for the custom cell-cycle model.
+// Needed for archiving and for writing out parameters file.
+// Simulations will throw errors if missing.
+#include "SerializationExportWrapper.hpp"
+CHASTE_CLASS_EXPORT(FixedDurationCellCycleModelWithGrowthInhibition)
+
+#endif // FIXEDDURATIONCELLCYCLEMODELWITHGROWTHINHIBITION_HPP_

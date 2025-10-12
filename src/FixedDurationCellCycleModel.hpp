@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2023, University of Oxford.
+Copyright (c) 2005-2025, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -33,47 +33,37 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TESTHELLO_HPP_
-#define TESTHELLO_HPP_
+#ifndef FIXEDDURATIONCELLCYCLEMODEL_HPP_
+#define FIXEDDURATIONCELLCYCLEMODEL_HPP_
 
-#include <cxxtest/TestSuite.h>
-/* Most Chaste code uses PETSc to solve linear algebra problems.  This involves starting PETSc at the beginning of a test-suite
- * and closing it at the end.  (If you never run code in parallel then it is safe to replace PetscSetupAndFinalize.hpp with FakePetscSetup.hpp)
- */
-#include "PetscSetupAndFinalize.hpp"
-#include "Hello.hpp"
+#include "AbstractSimplePhaseBasedCellCycleModel.hpp"
 
-/**
- * @file
- *
- * This is an example of a CxxTest test suite, used to test the source
- * code, and also used to run simulations (as it provides a handy
- * shortcut to compile and link against the correct libraries using scons).
- *
- * You can #include any of the files in the project 'src' folder.
- * For example here we #include "Hello.hpp"
- *
- * You can utilise any of the code in the main the Chaste trunk
- * in exactly the same way.
- * NOTE: you will have to alter the project SConscript file lines 41-44
- * to enable #including of code from the 'heart', 'cell_based' or 'crypt'
- * components of Chaste.
- */
-
-class TestHello : public CxxTest::TestSuite
+// "Simple" cell-cycle model: phase durations are set when the model is created.
+class FixedDurationCellCycleModel : public AbstractSimplePhaseBasedCellCycleModel
 {
-public:
-    void TestHelloClass()
-    {
-        // Create an object called 'world' of class 'Hello',
-        // (Hello.hpp is #included from the 'src' folder.)
-        Hello world("Hello world!");
+private:
+    // For archiving (saving or loading) the cell-cycle model object in a cell-based simulation. 
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & archive, const unsigned int version);
 
-        // The TS_ASSERT macros are used to test that the object performs as expected
-        TS_ASSERT_EQUALS(world.GetMessage(), "Hello world!");
-        TS_ASSERT_THROWS_THIS(world.Complain("I don't like you"),
-                              "I don't like you");
-    }
+    void SetPhaseDurations();
+    void SetG1Duration() override;
+
+public:
+    FixedDurationCellCycleModel();
+
+    // Override builder method for new copies of the cell-cycle model.
+    AbstractCellCycleModel* CreateCellCycleModel() override;
+    
+    // Override to start phase from G1
+    void UpdateCellCyclePhase() override;
 };
 
-#endif /*TESTHELLO_HPP_*/
+// Provides a unique identifier for the custom cell-cycle model.
+// Needed for archiving and for writing out parameters file.
+// Simulations will throw errors if missing.
+#include "SerializationExportWrapper.hpp"
+CHASTE_CLASS_EXPORT(FixedDurationCellCycleModel)
+
+#endif // FIXEDDURATIONCELLCYCLEMODEL_HPP_
