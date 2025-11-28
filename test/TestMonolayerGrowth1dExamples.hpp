@@ -101,12 +101,12 @@ private:
     
 public:
 
-    void noTest1dNodeChainCompression()
+    void Test1dNodeChainCompression()
     {
         double end_time = 10.0;
         double dt = 0.001;
         unsigned output_timesteps = 10;
-		double linear_spring_stiffness = 50.0/3.0;
+		double linear_spring_stiffness = 18.2816648;
         double quadratic_spring_stiffness = 50.0/3.0*5.0;
         //double compression = 0.5;
         //unsigned num_cells = 10;
@@ -204,7 +204,7 @@ public:
 
 
 
-    void Test2dPottsChainCompression()
+    void noTest2dPottsChainCompression()
     {
         unsigned start_index = 0;
         unsigned num_runs = 10;
