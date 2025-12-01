@@ -69,6 +69,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "NodeBasedCellPopulation.hpp"
 #include "QuadraticRepulsionForce.hpp"
+#include "LogRepulsionForce.hpp"
 
 #include "VertexBasedCellPopulation.hpp"
 #include "HoneycombVertexMeshGenerator.hpp"
@@ -107,17 +108,17 @@ public:
         double dt = 0.001;
         unsigned output_timesteps = 10;
 		double linear_spring_stiffness = 18.2816648;
-        double quadratic_spring_stiffness = 50.0/3.0*5.0;
+        double quadratic_spring_stiffness = 88.54;
+        double log_spring_stiffness = 15.6556;
         //double compression = 0.5;
         //unsigned num_cells = 10;
         std::string base_type = "Test02MonlayerGrowthGrowth1d/Mesh";
 
-
-        std::string force_types[2] = {"Linear","Quadratic"};
+        std::string force_types[3] = {"Linear","Quadratic","Log"};
 
         std::string tissue_types[2] = {"HomogeneousChain","HeterogeneousChain"};
 
-        for (unsigned force_type_index = 0; force_type_index != 2; force_type_index++)
+        for (unsigned force_type_index = 0; force_type_index != 3; force_type_index++)
         {
             std::string force_type = force_types[force_type_index];
 
@@ -176,6 +177,13 @@ public:
                     p_quadratic_force->SetRepulsionMagnitude(quadratic_spring_stiffness);
                     p_quadratic_force->SetCutOffLength(1.5);
                     simulator.AddForce(p_quadratic_force);
+                }
+                else if(force_type.compare("Log")==0)
+                {
+                    MAKE_PTR(LogRepulsionForce<1>, p_log_force);
+                    p_log_force->SetRepulsionMagnitude(log_spring_stiffness);
+                    p_log_force->SetCutOffLength(1.5);
+                    simulator.AddForce(p_log_force);
                 }
                 else
                 {
@@ -332,7 +340,7 @@ public:
 		double dt = 0.0001;
         unsigned output_timesteps = 100;
         
-        double timescale = 20.5;
+        double timescale = 0.16094; // to match 9CD at 1 hr
         
         //double target_area = 50.0;
         //double target_area_parameter = 5.0;
@@ -345,7 +353,7 @@ public:
 
         std::string tissue_types[2] = {"HomogeneousChain","HeterogeneousChain"};
         
-        for (unsigned tissue_type_index = 0; tissue_type_index != 2; tissue_type_index++)
+        for (unsigned tissue_type_index = 1; tissue_type_index != 2; tissue_type_index++)
         {
             std::string tissue_type = tissue_types[tissue_type_index];
 
@@ -355,11 +363,13 @@ public:
 
             if(tissue_type.compare("HomogeneousChain")==0)
             {
-                mesh_string = "projects/OpenVT/src/Test02MonolayerGrowth/homogeneous_chain";
+                //mesh_string = "projects/OpenVtMonolayer/src/homogeneous_chain";
+                mesh_string = "projects/OpenVtMonolayer/src/square_homogeneous_chain";
             }
             else if(tissue_type.compare("HeterogeneousChain")==0)
             {
-                mesh_string = "projects/OpenVT/src/Test02MonolayerGrowth/heterogeneous_chain";
+                //mesh_string = "projects/OpenVtMonolayer/src/heterogeneous_chain";
+                mesh_string = "projects/OpenVtMonolayer/src/square_heterogeneous_chain";
             }
             else
             {
@@ -388,8 +398,10 @@ public:
             MAKE_PTR(SimplifiedNagaiHondaForce<2>, p_force);
             p_force->SetNagaiHondaDeformationEnergyParameter(timescale*100.0); //100.0
             p_force->SetNagaiHondaMembraneSurfaceEnergyParameter(timescale*10.0); // 10.0
-            p_force->SetNagaiHondaTargetAreaParameter(0.5*sqrt(3.0)); 
-            p_force->SetNagaiHondaTargetPerimeterParameter(2.0*sqrt(3.0)); 
+            // p_force->SetNagaiHondaTargetAreaParameter(0.5*sqrt(3.0)); 
+            // p_force->SetNagaiHondaTargetPerimeterParameter(2.0*sqrt(3.0)); 
+            p_force->SetNagaiHondaTargetAreaParameter(1.0); 
+            p_force->SetNagaiHondaTargetPerimeterParameter(4.0);
 
             // So no difference between cells cell and cell boundary
             p_force->SetNagaiHondaCellCellAdhesionEnergyParameter(0.0);
@@ -398,9 +410,23 @@ public:
 
             simulator.AddForce(p_force);
             
-            simulator.Solve();
 
-                
+        // Create some boundary conditions and pass them to the simulation
+        c_vector<double,2> point = zero_vector<double>(2);
+        c_vector<double,2> normal = zero_vector<double>(2);
+        normal(1) = -1.0;
+        MAKE_PTR_ARGS(PlaneBoundaryCondition<2>, p_bc1, (&cell_population, point, normal)); // y>0
+        simulator.AddCellPopulationBoundaryCondition(p_bc1);
+        point(1) = 1.0;
+        normal(1) = 1.0;
+        MAKE_PTR_ARGS(PlaneBoundaryCondition<2>, p_bc2, (&cell_population, point, normal)); // y<1
+        simulator.AddCellPopulationBoundaryCondition(p_bc2);
+
+            simulator.Solve();
+            
+            // Reset for next simulation
+            SimulationTime::Instance()->Destroy();
+            SimulationTime::Instance()->SetStartTime(0.0);    
         }
 
     }

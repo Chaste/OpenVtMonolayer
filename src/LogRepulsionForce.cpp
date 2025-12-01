@@ -33,14 +33,14 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "QuadraticRepulsionForce.hpp"
+#include "LogRepulsionForce.hpp"
 
 #include "AbstractCentreBasedCellPopulation.hpp"
 #include "MeshBasedCellPopulation.hpp"
 #include "NodeBasedCellPopulation.hpp"
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-QuadraticRepulsionForce<ELEMENT_DIM,SPACE_DIM>::QuadraticRepulsionForce()
+LogRepulsionForce<ELEMENT_DIM,SPACE_DIM>::LogRepulsionForce()
    : AbstractTwoBodyInteractionForce<ELEMENT_DIM,SPACE_DIM>(),
      mRepulsionMagnitude(15.0)        // Default repulsion magnitude
 {
@@ -48,12 +48,12 @@ QuadraticRepulsionForce<ELEMENT_DIM,SPACE_DIM>::QuadraticRepulsionForce()
 
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-QuadraticRepulsionForce<ELEMENT_DIM,SPACE_DIM>::~QuadraticRepulsionForce()
+LogRepulsionForce<ELEMENT_DIM,SPACE_DIM>::~LogRepulsionForce()
 {
 }
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-c_vector<double, SPACE_DIM> QuadraticRepulsionForce<ELEMENT_DIM,SPACE_DIM>::CalculateForceBetweenNodes(unsigned nodeAGlobalIndex,
+c_vector<double, SPACE_DIM> LogRepulsionForce<ELEMENT_DIM,SPACE_DIM>::CalculateForceBetweenNodes(unsigned nodeAGlobalIndex,
                                                                                     unsigned nodeBGlobalIndex,
                                                                                     AbstractCellPopulation<ELEMENT_DIM,SPACE_DIM>& rCellPopulation)
 {
@@ -97,7 +97,7 @@ c_vector<double, SPACE_DIM> QuadraticRepulsionForce<ELEMENT_DIM,SPACE_DIM>::Calc
     }
 
     /*
-     * defaultrest length value of 1.0.
+     * default rest length value of 1.0.
      */
     double rest_length = 1.0;
 
@@ -106,8 +106,9 @@ c_vector<double, SPACE_DIM> QuadraticRepulsionForce<ELEMENT_DIM,SPACE_DIM>::Calc
 
     if (is_closer_than_rest_length) //overlap is negative
     {
-        assert(overlap > -rest_length_final);
-        c_vector<double, SPACE_DIM> temp = - mRepulsionMagnitude * unit_difference * pow((1.0 - distance_between_nodes/rest_length),2.0);
+        //log(x+1) is undefined for x<=-1
+        assert(overlap > -rest_length);
+        c_vector<double, SPACE_DIM> temp = mRepulsionMagnitude * unit_difference * rest_length * log(1.0 + overlap/rest_length);
         return temp;
     }
     else
@@ -117,20 +118,20 @@ c_vector<double, SPACE_DIM> QuadraticRepulsionForce<ELEMENT_DIM,SPACE_DIM>::Calc
 }
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-double QuadraticRepulsionForce<ELEMENT_DIM,SPACE_DIM>::GetRepulsionMagnitude()
+double LogRepulsionForce<ELEMENT_DIM,SPACE_DIM>::GetRepulsionMagnitude()
 {
     return mRepulsionMagnitude;
 }
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-void QuadraticRepulsionForce<ELEMENT_DIM,SPACE_DIM>::SetRepulsionMagnitude(double repulsionMagnitude)
+void LogRepulsionForce<ELEMENT_DIM,SPACE_DIM>::SetRepulsionMagnitude(double repulsionMagnitude)
 {
     assert(repulsionMagnitude > 0.0);
     mRepulsionMagnitude = repulsionMagnitude;
 }
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-void QuadraticRepulsionForce<ELEMENT_DIM,SPACE_DIM>::OutputForceParameters(out_stream& rParamsFile)
+void LogRepulsionForce<ELEMENT_DIM,SPACE_DIM>::OutputForceParameters(out_stream& rParamsFile)
 {
     *rParamsFile << "\t\t\t<RepulsionMagnitude>" << mRepulsionMagnitude << "</RepulsionMagnitude>\n";
    
@@ -139,13 +140,13 @@ void QuadraticRepulsionForce<ELEMENT_DIM,SPACE_DIM>::OutputForceParameters(out_s
 }
 
 // Explicit instantiation
-template class QuadraticRepulsionForce<1,1>;
-template class QuadraticRepulsionForce<1,2>;
-template class QuadraticRepulsionForce<2,2>;
-template class QuadraticRepulsionForce<1,3>;
-template class QuadraticRepulsionForce<2,3>;
-template class QuadraticRepulsionForce<3,3>;
+template class LogRepulsionForce<1,1>;
+template class LogRepulsionForce<1,2>;
+template class LogRepulsionForce<2,2>;
+template class LogRepulsionForce<1,3>;
+template class LogRepulsionForce<2,3>;
+template class LogRepulsionForce<3,3>;
 
 // Serialization for Boost >= 1.36
 #include "SerializationExportWrapperForCpp.hpp"
-EXPORT_TEMPLATE_CLASS_ALL_DIMS(QuadraticRepulsionForce)
+EXPORT_TEMPLATE_CLASS_ALL_DIMS(LogRepulsionForce)
